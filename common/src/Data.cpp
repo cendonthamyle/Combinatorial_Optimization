@@ -24,7 +24,7 @@ void readValue(std::istream& input, T& value, const std::string& description) {
 }
 
 // Construtor atualizado (os vetores se inicializam sozinhos)
-Data::Data( int qtParam, char * instance ) {
+Data::Data( int qtParam, const char * instance ) {
 
     if ( qtParam < 2 )  {
         cout << "Missing parameters\n";
