@@ -1,14 +1,14 @@
-/* Este programa:
- * 1. recebe o caminho de uma instância TSPLIB;
- * 2. carrega sua matriz de distâncias;
- * 3. cria uma solução sequencial provisória;
- * 4. calcula e valida seu custo;
- * 5. imprime o resultado.
+/**
+ * @brief Ponto de entrada do algoritmo heurístico para o TSP.
+ * 
+ * O programa recebe uma instância TSPLIB, constrói uma solução inicial por
+ * meio da heurística de inserção mais barata aleatorizada e imprime a rota
+ * obtida com seu respectivo custo.
  *
- * A solução sequencial será substituída posteriormente pela heurística
- * construtiva gulosa aleatorizada apresentada na Seção 2.2 do kit.
- */
-
+ * Posteriormente, serão adicionados busca local, perturbação e o framework ILS.
+ */ 
+ 
+ #include "Construction.h"
  #include "Data.h"
  #include "Solution.h"
 
@@ -17,6 +17,13 @@
  #include <numeric>
 
  namespace {
+
+    /**
+     * Uma semente fixa torna a execução reproduzível: duas execuções sobre a
+     * mesma instância devem produzir a mesma solução.
+     */
+    constexpr unsigned int defaultSeed = 42;
+
     void printUsage(const char* executableName){
         std::cerr
             << "Uso: " << executableName
@@ -24,6 +31,15 @@
     }
  }
 
+ /**
+  * @brief Carrega uma instância e constrói uma solução inicial para o TSP.
+  *
+  * Fluxo da execução ->    1. valida os argumentos;
+  *                         2. lê a instância TSPLIB;
+  *                         3. inicializa o gerador pseudoaleatório;
+  *                         4. executa a construção gulosa aleatorizada;
+  *                         5. valida e imprime a solução.
+  */
  int main(int argc, char* argv[]) {
     constexpr int expectedArgumentCount = 2;
 
@@ -34,39 +50,19 @@
     }
 
     try {
-        // Carrega a instância e constrói sua matriz de distâncias.
+        // Carrega a instância e prepara sua matriz de distâncias.
         Data data(argc, argv[1]);
         data.read();
 
-        Solution solution;
+        std::mt19937 randomGenerator(defaultSeed);
 
-        /*
-         * Cria a solução provisória [1, 2, 3, ..., n].
-         *
-         * std::iota atribui valores consecutivos ao vetor, começãndo em 1.
-         * Por exemplo, para quatro cidade, o resultado é [1, 2, 3, 4].
-         */
-        solution.sequence.resize(data.getDimension());
-
-        std::iota(
-            solution.sequence.begin(),
-            solution.sequence.end(),
-            1
-        );
-
-        /*
-         * Repete a primeira cidade no final para representar explicitamente
-         * o retorno ao ponto ao partido: [1, 2, ..., n, 1].
-         */
-        solution.sequence.push_back(1);
-
-        // Soma as distâncias entre todos os pares de cidades consecutivas.
-        solution.cost = calculateCost(solution, data);
+        const Solution solution = constructSolution(data, randomGenerator);
 
         /*
          * A validação protege as próximas etapas contra soluções incompletas,
          * cidades duplicadas, índices inválidos ou ciclos que não retornam
-         * à cidade inicial.
+         * à cidade inicial. Desssa forma, deixando explícito que appenas uma 
+         * solução válida pode ser apresentada como resultado.
          */
         if (!isValidSolution(solution, data.getDimension())) {
             std::cerr << "Erro: a solução criada é inválida.\n";
@@ -75,14 +71,17 @@
 
         std::cout
             << "Instância: " << data.getInstanceName() << '\n'
-            << "Dimensão: " << data.getDimension() << '\n';
+            << "Dimensão: " << data.getDimension() << '\n'
+            << "Semente: " << defaultSeed << '\n'
+            << "Metodo: Construção gulosa aleatorizada\n";
 
         printSolution(solution, std::cout);
 
         return 0;
     } catch (const std::exception& error) {
         /* 
-         * Centraliza o tratamento dos erros lançados pelo leitor, como arquivo
+         * Centraliza o tratamento dos erros lançados pelo leitor, apresentando 
+         * uma mensagem em vez de encerrar o programa abruptamente, como arquivo
          * inexistente, instância malformada ou formato TSLIB não suportado.
          */
         std::cerr << "Erro: " << error.what() << '\n';

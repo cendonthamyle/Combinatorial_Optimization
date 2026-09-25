@@ -25,6 +25,7 @@ target_compile_options(tsplib_reader PRIVATE
 # Biblioteca que contém a representação e as operações sobre soluções do TSP
 add_library(tsp_core
     01_tsp/src/Solution.cpp
+    01_tsp/src/Construction.cpp
 )
 
 target_include_directories(tsp_core PUBLIC
@@ -55,6 +56,7 @@ target_compile_options(tsp PRIVATE
 
 
 # TESTES AUTOMATIZADOS
+# Os testes utilizam caminhos relativos iniciados em "instances/".
 enable_testing()
 
 add_executable(test_data
@@ -70,7 +72,6 @@ add_test(
     COMMAND test_data
 )
 
-# Os testes utilizam caminhos relativos iniciados em "instances/".
 set_tests_properties(data_reader_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
@@ -89,5 +90,22 @@ add_test(
 )
 
 set_tests_properties(solution_tests PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+add_executable(test_construction
+    01_tsp/tests/test_construction.cpp
+)
+
+target_link_libraries(test_construction PRIVATE
+    tsp_core
+)
+
+add_test(
+    NAME construction_tests
+    COMMAND test_construction
+)
+
+set_tests_properties(construction_tests PROPERTIES
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
